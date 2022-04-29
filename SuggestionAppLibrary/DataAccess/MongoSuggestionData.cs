@@ -66,7 +66,7 @@ namespace SuggestionAppLibrary.DataAccess
 
             using var session = await client.StartSessionAsync();
 
-            session.StartTransaction();
+            //session.StartTransaction();
 
             try
             {
@@ -96,13 +96,13 @@ namespace SuggestionAppLibrary.DataAccess
                 }
                 await usersInTransaction.ReplaceOneAsync(u => u.Id == userId, user);
 
-                await session.CommitTransactionAsync();
+                //await session.CommitTransactionAsync();
 
                 _cache.Remove(CacheName);
             }
             catch (Exception ex)
             {
-                await session.AbortTransactionAsync();
+               // await session.AbortTransactionAsync();
             }
         }
 
@@ -111,7 +111,8 @@ namespace SuggestionAppLibrary.DataAccess
             var client = _db.Client;
             using var session = await client.StartSessionAsync();
 
-            session.StartTransaction();
+            //TODO: because of standalone connect, you just can't use transactions
+            //session.StartTransaction();
             try
             {
                 var db = client.GetDatabase(_db.DbName);
@@ -123,11 +124,11 @@ namespace SuggestionAppLibrary.DataAccess
                 user.AuthoredSuggestions.Add(new BasicSuggestionModel(suggestion));
                 await usersInTransaction.ReplaceOneAsync(u => u.Id == user.Id, user);
 
-                await session.CommitTransactionAsync();
+                //await session.CommitTransactionAsync();
             }
             catch (Exception ex)
             {
-                await session.AbortTransactionAsync();
+                //await session.AbortTransactionAsync();
             }
         }
     }

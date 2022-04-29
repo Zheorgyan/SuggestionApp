@@ -5,7 +5,7 @@ public class SuggestionModel
     [BsonRepresentation(BsonType.ObjectId)]
     public string Id { get; set; }
     public string Suggestion { get; set; }
-    public string Discription { get; set; }
+    public string Description { get; set; }
     public DateTime DateCreated { get; set; } = DateTime.Now;
     public CategoryModel Category { get; set; }
     public StatusModel SuggestionStatus { get; set; }
