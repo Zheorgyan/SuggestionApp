@@ -8,7 +8,7 @@ namespace SuggestionAppLibrary.DataAccess
         MongoClient Client { get; }
         string DbName { get; }
         IMongoCollection<StatusModel> StatusCollection { get; }
-        string StatusCollectioName { get; }
+        string StatusCollectionName { get; }
         IMongoCollection<SuggestionModel> SuggestionCollection { get; }
         string SuggestionCollectionName { get; }
         IMongoCollection<UserModel> UserCollection { get; }

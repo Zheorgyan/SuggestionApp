@@ -11,19 +11,19 @@ public class MongoUserData : IUserData
         _users = db.UserCollection;
     }
 
-    public async Task<List<UserModel>> GetUsersAsync()
+    public async Task<List<UserModel>> GetUsers()
     {
         var results = await _users.FindAsync(_ => true);
         return results.ToList();
     }
 
-    public async Task<UserModel> GetUserAsync(string id)
+    public async Task<UserModel> GetUser(string id)
     {
         var results = await _users.FindAsync(u => u.Id == id);
         return results.FirstOrDefault();
     }
 
-    public async Task<UserModel> GetUserFromAuthenticationAsync(string objectId)
+    public async Task<UserModel> GetUserFromAuthentication(string objectId)
     {
         var results = await _users.FindAsync(u => u.ObjectIdentifier == objectId);
         return results.FirstOrDefault();
