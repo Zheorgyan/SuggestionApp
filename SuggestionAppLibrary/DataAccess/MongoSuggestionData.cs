@@ -24,11 +24,25 @@ namespace SuggestionAppLibrary.DataAccess
             var output = _cache.Get<List<SuggestionModel>>(CacheName);
             if (output is null)
             {
-                var results = await _suggestions.FindAsync(s => s.Archived == false);
+                var results = await _suggestions.FindAsync(s => !s.Archived);
 
                 output = results.ToList();
 
                 _cache.Set(CacheName, output, TimeSpan.FromMinutes(1));
+            }
+
+            return output;
+        }
+
+        public async Task<List<SuggestionModel>> GetUserSuggestions(string userId)
+        {
+            var output = _cache.Get<List<SuggestionModel>>(userId);
+            if (output is null)
+            {
+                var results = await _suggestions.FindAsync(s => s.Author.Id == userId);
+                output = results.ToList();
+
+                _cache.Set(userId, output, TimeSpan.FromMinutes(1));
             }
 
             return output;
@@ -51,7 +65,7 @@ namespace SuggestionAppLibrary.DataAccess
         {
             var output = await GetAllSuggestions();
 
-            return output.Where(x => x.ApprovedForRelease = false && x.Rejected == false).ToList();
+            return output.Where(x => x.ApprovedForRelease == false && x.Rejected == false).ToList();
         }
 
         public async Task UpdateSuggestion(SuggestionModel suggestion)
