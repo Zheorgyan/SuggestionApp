@@ -1,5 +1,7 @@
 ﻿@page "/"
 
+@inject AuthenticationStateProvider authProvider
+
 @inject ICategoryData categoryData
 @inject IStatusData statusData
 @inject ISuggestionData suggestionData
@@ -25,17 +27,18 @@
 
 <div>
     <div>
-        @if(suggestions is not null)
+        @if (suggestions is not null)
         {
             <Virtualize Items="@suggestions" Context="s" OverscanCount="10">
                 <div>
-                    <div>
+                    <div @onclick="(() => VoteUp(s))">
                         <div>@GetUpvoteTopText(s)</div>
                         <span class="oi oi-caret-top"></span>
                         <div>@GetUpvoteBottomText(s)</div>
                     </div>
                     <div>
-                        <div @onclick="(() => OpenDetails(s))">@s.Suggestion
+                        <div @onclick="(() => OpenDetails(s))">
+                            @s.Suggestion
                         </div>
                         <div>
                             <div @onclick="(() => OpenDetails(s))">
@@ -49,11 +52,11 @@
                         </div>
                     </div>
                 </div>
-            </Virtualize>   
+            </Virtualize>
         }
     </div>
     <div>
-        @if(categories is not null)
+        @if (categories is not null)
         {
             <div>
                 <span>Category</span>
@@ -65,7 +68,7 @@
             </div>
         }
 
-        @if(statuses is not null)
+        @if (statuses is not null)
         {
             <div>
                 <span>Status</span>
@@ -83,6 +86,7 @@
     private List<SuggestionModel> suggestions;
     private List<CategoryModel> categories;
     private List<StatusModel> statuses;
+    private UserModel loggedInUser;
 
     private string selectedCategory = "All";
     private string selectedStatus = "All";
@@ -93,11 +97,68 @@
     {
         categories = await categoryData.GetAllCategories();
         statuses = await statusData.GetAllStatuses();
+        await LoadAndVerifyUser();
+
+    }
+
+    private async Task LoadAndVerifyUser()
+    {
+        var authState = await authProvider.GetAuthenticationStateAsync();
+        var objectId = authState.User.Claims.FirstOrDefault(c => c.Type.Contains("objectidentifier"))?.Value;
+
+        if (!string.IsNullOrWhiteSpace(objectId))
+        {
+            loggedInUser = await userData.GetUserFromAuthentication(objectId) ?? new();
+
+            var firstName = authState.User.Claims.FirstOrDefault(c => c.Type.Contains("givenname"))?.Value;
+            var lastName = authState.User.Claims.FirstOrDefault(c => c.Type.Contains("surname"))?.Value;
+            var displayName = authState.User.Claims.FirstOrDefault(c => c.Type.Equals("name"))?.Value;
+            var email = authState.User.Claims.FirstOrDefault(c => c.Type.Contains("email"))?.Value;
+
+            bool isDirty = false;
+
+            if (!objectId.Equals(loggedInUser.ObjectIdentifier))
+            {
+                isDirty = true;
+                loggedInUser.ObjectIdentifier = objectId;
+            }
+            if (!firstName.Equals(loggedInUser.FirstName))
+            {
+                isDirty = true;
+                loggedInUser.FirstName = firstName;
+            }
+            if (!lastName.Equals(loggedInUser.LastName))
+            {
+                isDirty = true;
+                loggedInUser.LastName = lastName;
+            }
+            if (!displayName.Equals(loggedInUser.DisplayName))
+            {
+                isDirty = true;
+                loggedInUser.DisplayName = displayName;
+            }
+            if (!email.Equals(loggedInUser.EmailAddress))
+            {
+                isDirty = true;
+                loggedInUser.EmailAddress = email;
+            }
+            if (isDirty)
+            {
+                if (string.IsNullOrWhiteSpace(loggedInUser.Id))
+                {
+                    await userData.CreateUser(loggedInUser);
+                }
+                else
+                {
+                    await userData.UpdateUser(loggedInUser);
+                }
+            }
+        }
     }
 
     protected async override Task OnAfterRenderAsync(bool firstRender)
     {
-        if(firstRender)
+        if (firstRender)
         {
             await LoadFilterState();
             await FilterSuggestions();
@@ -133,12 +194,12 @@
         var output = await suggestionData.GetAllApprovedSuggestions();
 
         //TODO: not the best perfomance need to refactor anyway
-        if(selectedCategory != "All")
+        if (selectedCategory != "All")
         {
             output = output.Where(s => s.Category?.CategoryName == selectedCategory).ToList();
         }
 
-        if(selectedStatus != "All")
+        if (selectedStatus != "All")
         {
             output = output.Where(s => s.SuggestionStatus?.StatusName == selectedStatus).ToList();
         }
@@ -188,6 +249,34 @@
         await FilterSuggestions();
     }
 
+    private async Task VoteUp(SuggestionModel suggestion)
+    {
+        if (loggedInUser is not null)
+        {
+            if (suggestion.Author.Id == loggedInUser.Id)
+            {
+                // Can't vote on your own suggestion
+                return;
+            }
+
+            if (!suggestion.UserVotes.Add(loggedInUser.Id))
+            {
+                suggestion.UserVotes.Remove(loggedInUser.Id);
+            }
+
+            await suggestionData.UpvoteSuggestion(suggestion.Id, loggedInUser.Id);
+
+            if (!isSortedByNew)
+            {
+                suggestions = suggestions.OrderByDescending(s => s.UserVotes.Count).ThenByDescending(s => s.DateCreated).ToList();
+            }
+        }
+        else
+        {
+            navManager.NavigateTo("/MicrosoftIdentity/Account/SignIn", true);
+        }
+    }
+
     private string GetUpvoteTopText(SuggestionModel suggestion)
     {
         if (suggestion.UserVotes?.Count > 0)
@@ -196,7 +285,14 @@
         }
         else
         {
-            return "Click To";
+            if (suggestion.Author.Id == loggedInUser?.Id)
+            {
+                return "Awaiting";
+            }
+            else
+            {
+                return "Click To";
+            }
         }
     }
 

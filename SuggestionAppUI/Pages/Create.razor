@@ -1,8 +1,10 @@
 ﻿@page "/Create"
+@attribute [Authorize]
 
 @using SuggestionAppUI.Models
 @using SuggestionAppUI.Components
 
+@inject AuthenticationStateProvider authProvider
 @inject ICategoryData categoryData
 @inject ISuggestionData suggestionData
 @inject IUserData userData
@@ -57,12 +59,11 @@
     private CreateSuggestionModel suggestion = new();
     private List<CategoryModel> categories;
     private UserModel loggedInUser;
+
     protected async override Task OnInitializedAsync()
     {
         categories = await categoryData.GetAllCategories();
-
-        //TODO: Replace with user lookup
-        loggedInUser = await userData.GetUserFromAuthentication("abc-123");
+        loggedInUser = await authProvider.GetUserFromAuth(userData);
     }
 
     private void ClosePage()
