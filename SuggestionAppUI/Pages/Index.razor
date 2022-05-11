@@ -15,13 +15,50 @@
 </div>
 
 <div class="row">
-    <div class="suggestions-count col-md-4 text-light mt-2">@suggestions?.Count Suggestions</div>
+    <div class="suggestion-count col-md-4 text-light mt-2">@suggestions?.Count Suggestions</div>
     <div class="col-md-4 col-xl-5 btn-group">
         <button class="btn btn-order @SortedByNewClass(true)" @onclick="(() => OrderByNew(true))">New</button>
         <button class="btn btn-order @SortedByNewClass(false)" @onclick="(() => OrderByNew(false))">Popular</button>
     </div>
     <div class="col-md-4 col-xl-3 search-box">
         <input class="form-control rounded-control" type="text" placeholder="Search" aria-label="Search box" @oninput="((txt) => OnSearchInput(txt.Value as string))" />
+    </div>
+    <div class="col-12 d-block d-md-none">
+        @if (categories is not null && showCategories)
+        {
+            <div class="categories">
+                <span class="texttext-uppercase fw-bold">Category</span>
+                <div class="@GetSelectedCategory()" @onclick="(() => OnCategoryClick())"> All</div>
+                @foreach (var c in categories)
+                {
+                    <div class="@GetSelectedCategory(c.CategoryName)" @onclick="(() => OnCategoryClick(c.CategoryName))">@c.CategoryName</div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="categories" @onclick="(() => showCategories = true)">
+                <span class="selected-category">Category - @selectedCategory</span>
+            </div>
+        }
+
+        @if (statuses is not null && showStatuses)
+        {
+            <div class="statuses">
+                <span class="text-uppercase fw-bold">Status</span>
+                <div class="@GetSelectedStatus()" @onclick="(() => OnStatusClick())">All</div>
+                @foreach (var s in statuses)
+                {
+                    <div class="@GetSelectedStatus(s.StatusName)" @onclick="(() => OnStatusClick(s.StatusName))">@s.StatusName</div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="statuses" @onclick="(() => showStatuses = true)">
+                <span class="selected-status">Status - @selectedStatus</span>
+            </div>
+        }
     </div>
 </div>
 
@@ -40,22 +77,39 @@
                         <div class="suggestion-entry-text-title" @onclick="(() => OpenDetails(s))">
                             @s.Suggestion
                         </div>
-                        <div>
-                            <div class="suggestion-entry-text-category" @onclick="(() => OpenDetails(s))">
-                                @s.Category?.CategoryName
+                    @if (archivingSuggestion is null || archivingSuggestion.Id != s.Id)
+                    {
+                        <div class="suggestion-entry-bottom">
+                            <div>
+                                <div class="suggestion-entry-text-category" @onclick="(() => OpenDetails(s))">
+                                    @s.Category?.CategoryName
+                                </div>
                             </div>
-                        </div>
+                            <AuthorizeView Policy="Admin">
+                                <button class="btn suggestion-entry-text-category btn-archive" @onclick="(() => archivingSuggestion = s)">
+                                    Archive
+                                </button>
+                            </AuthorizeView>
                     </div>
-                    <div class="suggestion-entry-status @GetSuggestionStatusClass(s)">
-                        <div class="suggestion-entry-status-text">
-                            @s.SuggestionStatus?.StatusName
+                    }
+                    else
+                    {
+                        <div class="suggestion-entry-bottom">
+                            <button class="btn btn-archive btn-archive-confirm" @onclick="ArchiveSuggestion">Confirm</button>
+                            <button class="btn btn-archive btn-archive-reject" @onclick="(() => archivingSuggestion = null)">Cancel</button>
                         </div>
+                    }
+                </div>
+                <div class="suggestion-entry-status @GetSuggestionStatusClass(s)">
+                    <div class="suggestion-entry-status-text">
+                        @s.SuggestionStatus?.StatusName
                     </div>
                 </div>
-            </Virtualize>
+            </div>
+        </Virtualize>
         }
     </div>
-    <div class="col-md-4 col-xl-3">
+    <div class="col-md-4 col-xl-3 d-none d-md-block">
         @if (categories is not null)
         {
             <div class="categories">
@@ -81,318 +135,3 @@
         }
     </div>
 </div>
-
-@code {
-    private List<SuggestionModel> suggestions;
-    private List<CategoryModel> categories;
-    private List<StatusModel> statuses;
-    private UserModel loggedInUser;
-
-    private string selectedCategory = "All";
-    private string selectedStatus = "All";
-    private string searchText = "";
-    private bool isSortedByNew = true;
-
-    protected async override Task OnInitializedAsync()
-    {
-        categories = await categoryData.GetAllCategories();
-        statuses = await statusData.GetAllStatuses();
-        await LoadAndVerifyUser();
-
-    }
-
-    private async Task LoadAndVerifyUser()
-    {
-        var authState = await authProvider.GetAuthenticationStateAsync();
-        var objectId = authState.User.Claims.FirstOrDefault(c => c.Type.Contains("objectidentifier"))?.Value;
-
-        if (!string.IsNullOrWhiteSpace(objectId))
-        {
-            loggedInUser = await userData.GetUserFromAuthentication(objectId) ?? new();
-
-            var firstName = authState.User.Claims.FirstOrDefault(c => c.Type.Contains("givenname"))?.Value;
-            var lastName = authState.User.Claims.FirstOrDefault(c => c.Type.Contains("surname"))?.Value;
-            var displayName = authState.User.Claims.FirstOrDefault(c => c.Type.Equals("name"))?.Value;
-            var email = authState.User.Claims.FirstOrDefault(c => c.Type.Contains("email"))?.Value;
-
-            bool isDirty = false;
-
-            if (!objectId.Equals(loggedInUser.ObjectIdentifier))
-            {
-                isDirty = true;
-                loggedInUser.ObjectIdentifier = objectId;
-            }
-            if (!firstName.Equals(loggedInUser.FirstName))
-            {
-                isDirty = true;
-                loggedInUser.FirstName = firstName;
-            }
-            if (!lastName.Equals(loggedInUser.LastName))
-            {
-                isDirty = true;
-                loggedInUser.LastName = lastName;
-            }
-            if (!displayName.Equals(loggedInUser.DisplayName))
-            {
-                isDirty = true;
-                loggedInUser.DisplayName = displayName;
-            }
-            if (!email.Equals(loggedInUser.EmailAddress))
-            {
-                isDirty = true;
-                loggedInUser.EmailAddress = email;
-            }
-            if (isDirty)
-            {
-                if (string.IsNullOrWhiteSpace(loggedInUser.Id))
-                {
-                    await userData.CreateUser(loggedInUser);
-                }
-                else
-                {
-                    await userData.UpdateUser(loggedInUser);
-                }
-            }
-        }
-    }
-
-    protected async override Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await LoadFilterState();
-            await FilterSuggestions();
-            StateHasChanged();
-        }
-    }
-
-    private void LoadCreatePage()
-    {
-        if (loggedInUser is not null)
-        {
-            navManager.NavigateTo("/Create");
-        }
-        else
-        {
-            navManager.NavigateTo("/MicrosoftIdentity/Account/SignIn", true);
-        }
-    }
-
-    private async Task LoadFilterState()
-    {
-        var stringResults = await sessionStorage.GetAsync<string>(nameof(selectedCategory));
-        selectedCategory = stringResults.Success ? stringResults.Value : "All";
-
-        stringResults = await sessionStorage.GetAsync<string>(nameof(selectedStatus));
-        selectedStatus = stringResults.Success ? stringResults.Value : "All";
-
-        stringResults = await sessionStorage.GetAsync<string>(nameof(searchText));
-        searchText = stringResults.Success ? stringResults.Value : "";
-
-        var boolResults = await sessionStorage.GetAsync<bool>(nameof(isSortedByNew));
-        isSortedByNew = boolResults.Success ? boolResults.Value : true;
-    }
-
-    private async Task SaveFilterState()
-    {
-        await sessionStorage.SetAsync(nameof(selectedCategory), selectedCategory);
-        await sessionStorage.SetAsync(nameof(selectedStatus), selectedStatus);
-        await sessionStorage.SetAsync(nameof(searchText), searchText);
-        await sessionStorage.SetAsync(nameof(isSortedByNew), isSortedByNew);
-    }
-
-    private async Task FilterSuggestions()
-    {
-        var output = await suggestionData.GetAllApprovedSuggestions();
-
-        //TODO: not the best perfomance need to refactor anyway
-        if (selectedCategory != "All")
-        {
-            output = output.Where(s => s.Category?.CategoryName == selectedCategory).ToList();
-        }
-
-        if (selectedStatus != "All")
-        {
-            output = output.Where(s => s.SuggestionStatus?.StatusName == selectedStatus).ToList();
-        }
-
-        if (!string.IsNullOrWhiteSpace(searchText))
-        {
-            output = output.Where(s => s.Suggestion.Contains(searchText, StringComparison.InvariantCultureIgnoreCase) ||
-                                       s.Description.Contains(searchText, StringComparison.InvariantCultureIgnoreCase)).ToList();
-        }
-
-        if (isSortedByNew)
-        {
-            output = output.OrderByDescending(s => s.DateCreated).ToList();
-        }
-        else
-        {
-            output = output.OrderByDescending(s => s.UserVotes.Count)
-                           .ThenByDescending(s => s.DateCreated).ToList();
-        }
-
-        suggestions = output;
-
-        await SaveFilterState();
-    }
-
-    private async Task OrderByNew(bool isNew)
-    {
-        isSortedByNew = isNew;
-        await FilterSuggestions();
-    }
-
-    private async Task OnSearchInput(string searchInput)
-    {
-        searchText = searchInput;
-        await FilterSuggestions();
-    }
-
-    private async Task OnCategoryClick(string category = "All")
-    {
-        selectedCategory = category;
-        await FilterSuggestions();
-    }
-
-    private async Task OnStatusClick(string status = "All")
-    {
-        selectedStatus = status;
-        await FilterSuggestions();
-    }
-
-    private async Task VoteUp(SuggestionModel suggestion)
-    {
-        if (loggedInUser is not null)
-        {
-            if (suggestion.Author.Id == loggedInUser.Id)
-            {
-                // Can't vote on your own suggestion
-                return;
-            }
-
-            if (!suggestion.UserVotes.Add(loggedInUser.Id))
-            {
-                suggestion.UserVotes.Remove(loggedInUser.Id);
-            }
-
-            await suggestionData.UpvoteSuggestion(suggestion.Id, loggedInUser.Id);
-
-            if (!isSortedByNew)
-            {
-                suggestions = suggestions.OrderByDescending(s => s.UserVotes.Count).ThenByDescending(s => s.DateCreated).ToList();
-            }
-        }
-        else
-        {
-            navManager.NavigateTo("/MicrosoftIdentity/Account/SignIn", true);
-        }
-    }
-
-    private string GetUpvoteTopText(SuggestionModel suggestion)
-    {
-        if (suggestion.UserVotes?.Count > 0)
-        {
-            return suggestion.UserVotes.Count.ToString("00");
-        }
-        else
-        {
-            if (suggestion.Author.Id == loggedInUser?.Id)
-            {
-                return "Awaiting";
-            }
-            else
-            {
-                return "Click To";
-            }
-        }
-    }
-
-    private string GetUpvoteBottomText(SuggestionModel suggestion)
-    {
-        if (suggestion.UserVotes?.Count > 1)
-        {
-            return "Upvotes";
-        }
-        else
-        {
-            return "Upvote";
-        }
-    }
-
-    private void OpenDetails(SuggestionModel suggestion)
-    {
-        navManager.NavigateTo($"/Details/{suggestion.Id}");
-    }
-
-    private string SortedByNewClass(bool isNew)
-    {
-        if (isNew == isSortedByNew)
-        {
-            return "sort-selected";
-        }
-        else
-        {
-            return "";
-        }
-    }
-
-    private string GetVoteClass(SuggestionModel suggestion)
-    {
-        if (suggestion.UserVotes is null || suggestion.UserVotes.Count == 0)
-        {
-            return "suggestion-entry-no-votes";
-        }
-        else if (suggestion.UserVotes.Contains(loggedInUser?.Id))
-        {
-            return "suggestion-entry-voted";
-        }
-        else
-        {
-            return "suggestion-entry-not-voted";
-        }
-    }
-
-    private string GetSuggestionStatusClass(SuggestionModel suggestion)
-    {
-        if (suggestion is null || suggestion.SuggestionStatus is null)
-        {
-            return "suggestion-entry-status-none";
-        }
-
-        var output = suggestion.SuggestionStatus.StatusName switch
-        {
-            "Completed" => "suggestion-entry-status-completed",
-            "Watching" => "suggestion-entry-status-watching",
-            "Upcoming" => "suggestion-entry-status-upcoming",
-            "Dismissed" => "suggestion-entry-status-dismissed",
-            _ => "suggestion-entry-status-none",
-        };
-
-        return output;
-    }
-
-    private string GetSelectedCategory(string category = "All")
-    {
-        if (category == selectedCategory)
-        {
-            return "selected-category";
-        }
-        else
-        {
-            return "";
-        }
-    }
-
-    private string GetSelectedStatus(string status = "All")
-    {
-        if (status == selectedStatus)
-        {
-            return "selected-status";
-        }
-        else
-        {
-            return "";
-        }
-    }
-}

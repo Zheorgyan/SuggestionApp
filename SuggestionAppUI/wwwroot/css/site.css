@@ -14,7 +14,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 body {
-    /*background: url(../images/SuggestionPageBackground.png) no-repeat center center fixed;*/
+    background: url(../images/SuggestionBackground.png) no-repeat center center fixed;
     background-size: cover;
     height: 100%;
 }
@@ -504,4 +504,230 @@ a:hover, .btn-link:hover {
 
 .suggestion-detail-owner-notes {
     padding-bottom: 20px
+}
+
+.submission {
+    background-color: #FFFFFF;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.btn-approve,
+.btn-reject {
+    width: 100%;
+    font-family: 'Montserrat', sans-serif;
+    border-radius: 10px;
+    border-width: 3px;
+}
+
+.btn-approve {
+    color: #FFFFFF;
+    background-color: #B5D43A;
+    border-color: #FFFFFF;
+}
+
+    .btn-approve:hover {
+        color: #B5D43A;
+        border-color: #B5D43A;
+        background-color: #FFFFFF;
+    }
+
+.btn-reject {
+    color: #FFFFFF;
+    background-color: #E9354C;
+    border-color: #FFFFFF;
+}
+
+    .btn-reject:hover {
+        color: #E9354C;
+        border-color: #E9354C;
+        background-color: #FFFFFF;
+    }
+
+.approval-edit-form {
+    display: flex;
+}
+
+.approval-edit-field {
+    flex: 1;
+    border-radius: 10px;
+}
+
+.submission-edit-approve {
+    color: #B5D43A;
+}
+
+    .submission-edit-approve:hover {
+        font-weight: 700;
+    }
+
+.submission-edit-reject {
+    color: #E9354C;
+}
+
+    .submission-edit-reject:hover {
+        font-weight: 700;
+    }
+
+.submission-edit-icon {
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+    .submission-edit-icon:hover {
+        color: #39BAD8;
+    }
+
+.my-submission-heading {
+    color: #000000;
+    text-transform:uppercase;
+}
+
+.my-submission-text {
+    margin-bottom: 0;
+    padding-left: 1rem;
+}
+
+my-submission-separator {
+    color: #A9A9A9;
+    height: 2px;
+    opacity: 1;
+}
+
+.suggestion-entry-bottom {
+    display: flex;
+}
+
+.btn-archive {
+    border: 0;
+    background-color: #FFFFFF;
+    padding: 0 10px;
+    flex: unset;
+}
+
+.btn-archive-confirm,
+.btn-archive-reject {
+    text-transform: uppercase;
+    color: darkgray;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 0.8rem;
+    flex: 1;
+}
+
+.btn-archive-confirm {
+    color: #E9354C;
+}
+
+.admin-details {
+    margin-top: 20px;
+}
+
+.admin-set-statuses {
+    display: flex;
+    justify-content: space-evenly;
+    flex-wrap: wrap;
+}
+
+.btn-status-completed:hover {
+    color: #B5D43A;
+}
+
+.btn-status-watching:hover {
+    color: #E9354C;
+}
+
+.btn-status-upcoming:hover {
+    color: #835581;
+}
+
+.btn-status-dismissed:hover {
+    color: #F9C30B;
+}
+
+@media screen and (max-width: 575px) {
+    .btn-approve,
+    .btn-reject {
+        width: 45%;
+    }
+
+    .suggestion-entry {
+        grid-template-columns: 100px 1fr 45px;
+    }
+
+    .suggestion-entry-no-votes,
+    .suggestion-entry-not-voted,
+    .suggestion-entry-voted {
+        min-height: 100px;
+    }
+}
+
+@media screen and (max-width: 767px) {
+    .search-box {
+        --bs-gutter-x: inherit;
+        margin-top: 10px;
+    }
+
+    .nav-links {
+        justify-content: center;
+    }
+
+    .login-link {
+        flex: 1;
+        padding-left: 0;
+    }
+
+    .categories,
+    .statuses {
+        margin: 0;
+        margin-top: 10px;
+        padding: 0.375rem;
+        padding-left: 0.75rem;
+    }
+
+    .suggestion-container {
+        margin-bottom: 1rem;
+    }
+
+    .create-form,
+    .detail-form {
+        margin: 0;
+        margin-bottom: 1rem;
+    }
+
+    .form-layout {
+        padding: 1rem;
+    }
+
+    .submission {
+        margin: 0;
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .suggestion-results {
+        padding: 0;
+        margin-top: 0;
+    }
+
+    .admin-details {
+        margin-top: 0;
+    }
+
+    .suggestion-detail-status-section {
+        padding: 0.5rem;
+    }
+
+    .suggestion-detail-suggestion {
+        font-size: 1rem;
+    }
+
+    .suggestion-detail-text {
+        padding-left: 12px;
+    }
+
+    .suggestion-entry-text-category {
+        padding-top: 0.5rem;
+    }
 }
